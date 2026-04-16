@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: agentic-ai-customer-support
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn wsgi:application --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: FLASK_HOST
+        value: 0.0.0.0
+      - key: FLASK_DEBUG
+        value: "False"
+      - key: DATABASE_NAME
+        value: Product_Database
+      - key: VISION_MODEL_PATH
+        value: /opt/render/project/src/src/vision/model
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: FLASK_SECRET_KEY
+        generateValue: true
+      - key: MONGODB_URI
+        sync: false
