@@ -11,7 +11,7 @@ load_dotenv()
 # =============================================================================
 # API KEYS
 # =============================================================================
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "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")
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1"
 OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "openai/gpt-5.3-codex")
 MODEL_PRIORITY = [
@@ -23,22 +23,10 @@ MODEL_PRIORITY = [
 DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "anthropic/claude-sonnet-4.6")
 
 # =============================================================================
-# PROJECT PATHS
-# =============================================================================
-_current_file = os.path.abspath(__file__)
-_config_dir = os.path.dirname(_current_file)
-PROJECT_ROOT = os.path.dirname(_config_dir)
-DATA_DIR = os.path.join(PROJECT_ROOT, "EXCEL FILES")
-RUNTIME_DATA_PATH = os.getenv(
-    "RUNTIME_DATA_PATH",
-    os.path.join(PROJECT_ROOT, "runtime_data", "app_state.json")
-)
-
-# =============================================================================
 # DATABASE CONFIGURATION
 # =============================================================================
-MONGODB_URI = os.getenv("MONGODB_URI", "")
-DATABASE_NAME = os.getenv("DATABASE_NAME", os.getenv("MONGODB_DATABASE", "Product_Database"))
+MONGODB_URI = os.getenv("MONGODB_URI", "mongodb+srv://nexusteam751_db_user:TyPtleJnMk9up8Sc@product-database.6hm9ilm.mongodb.net/")
+DATABASE_NAME = os.getenv("DATABASE_NAME", "Product_Database")
 
 # Collection Names
 COLLECTIONS = {
@@ -99,7 +87,7 @@ TOTAL_DELIVERY_HOURS = 48  # 2 days
 # =============================================================================
 # VISION MODEL CONFIGURATION
 # =============================================================================
-VISION_MODEL_PATH = os.getenv("VISION_MODEL_PATH", os.path.join(PROJECT_ROOT, "src", "vision", "model"))
+VISION_MODEL_PATH = os.getenv("VISION_MODEL_PATH", "models/")
 IMAGE_CATEGORIES = [
     "damaged_product",
     "wrong_product",
@@ -113,8 +101,13 @@ CONFIDENCE_THRESHOLD = 0.7
 # =============================================================================
 # EXCEL EXPORT CONFIGURATION - FIXED
 # =============================================================================
+# FIXED: Get project root directory (where main.py is)
+_current_file = os.path.abspath(__file__)  # config/config.py
+_config_dir = os.path.dirname(_current_file)  # config/
+_project_root = os.path.dirname(_config_dir)  # project root
+
 # Set exports path at same level as src/
-EXPORT_PATH = os.path.join(PROJECT_ROOT, "exports")
+EXPORT_PATH = os.path.join(_project_root, "exports")
 
 # Alternative: Use environment variable if set
 EXPORT_PATH = os.getenv("EXPORT_PATH", EXPORT_PATH)
@@ -125,7 +118,6 @@ SHIPMENT_FILE = "shipments.xlsx"
 # =============================================================================
 # SERVER CONFIGURATION
 # =============================================================================
-HOST = os.getenv("HOST", os.getenv("FLASK_HOST", "0.0.0.0"))
-PORT = int(os.getenv("PORT", os.getenv("FLASK_PORT", "5000")))
-DEBUG = os.getenv("DEBUG", os.getenv("FLASK_DEBUG", "False")).lower() == "true"
-FLASK_SECRET_KEY = os.getenv("FLASK_SECRET_KEY", "")
+HOST = os.getenv("HOST", "127.0.0.1")
+PORT = int(os.getenv("PORT", "5000"))
+DEBUG = os.getenv("DEBUG", "True").lower() == "true"

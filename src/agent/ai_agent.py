@@ -288,7 +288,7 @@ class CustomerSupportAgent:
             headers = {
                 "Authorization": f"Bearer {self.api_key}",
                 "Content-Type": "application/json",
-                "HTTP-Referer": "https://customer-support-app.local",
+                "HTTP-Referer": "http://localhost:5000",
                 "X-Title": "Customer Support"
             }
             

@@ -1,8 +1,8 @@
-# Render Deployment Guide
+# Render/Railway Deployment Guide
 
-## 1) Required environment variables in Render
+## 1) Required environment variables in Render/Railway
 
-Set these in **Render > Service > Environment**:
+Set these in your deployment environment variables:
 
 - `MONGODB_URI` = your MongoDB Atlas URI
 - `DATABASE_NAME` = `Product_Database` (or your DB name)
@@ -14,6 +14,11 @@ Optional:
 - `OPENROUTER_MODEL`
 - `MODEL_PRIORITY`
 - `EXPORT_PATH` (default: `exports`)
+- `VISION_MODEL_PATH` (example: `src/vision/model/AirChef_Fryo_good_bad_classifier.h5`)
+- `UPLOAD_FOLDER` (default: `uploads`)
+- `MAX_CONTENT_LENGTH` (default: `16777216`)
+- `PYTHON_VERSION` = `3.11.9`
+- `NIXPACKS_PYTHON_VERSION` = `3.11.9` (Railway/Nixpacks)
 
 ## 2) Build/start commands
 
@@ -32,22 +37,19 @@ This default Render setup is optimized for `512 MB` instances. Chat and login wo
 
 ## 3) Vision model setup (.h5)
 
-Image analysis is optional in production. The base deploy now skips TensorFlow to keep Render memory usage low.
+Image analysis uses TensorFlow and is included in `requirements.txt`.
+Place `.h5` model files in:
 
-If you want image analysis to work, deploy with both of these:
-
-1. Install extra dependencies:
-   - `pip install -r requirements.txt -r requirements-vision.txt`
-2. Place `.h5` model files in:
-   - `src/vision/model/`
+- `src/vision/model/`
 
 Expected naming:
 
 - `<Product Name>_good_bad_classifier.h5`
 
-Example:
+Examples:
 
-- `AirChef Fryo_good_bad_classifier.h5`
+- `AirChef_Fryo_good_bad_classifier.h5`
+- `VISION_MODEL_PATH=src/vision/model/AirChef_Fryo_good_bad_classifier.h5`
 
 If models are missing, API returns a graceful message and the chat UI still works.
 

@@ -1,7 +1,6 @@
 # Flask web framework
 flask>=2.3.0
 flask-cors>=4.0.0
-gunicorn>=21.2.0
 
 # MongoDB driver
 pymongo>=4.5.0
@@ -20,8 +19,9 @@ python-dotenv>=1.0.0
 # Date/time utilities
 python-dateutil>=2.8.0
 
-# Vision/image analysis is optional in lightweight deployments.
-# Install TensorFlow separately only when .h5 classifiers are available.
+# Deep learning (for vision model)
+tensorflow>=2.13.0
+keras>=2.13.0
 numpy>=1.24.0
 pillow>=10.0.0
 

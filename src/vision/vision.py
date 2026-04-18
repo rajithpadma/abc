@@ -14,69 +14,40 @@ import base64
 import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from config.config import IMAGE_CATEGORIES, CONFIDENCE_THRESHOLD, VISION_MODEL_PATH
+from config.config import IMAGE_CATEGORIES, CONFIDENCE_THRESHOLD
+
+try:
+    from tensorflow.keras.models import load_model
+    from tensorflow.keras.applications import MobileNetV2
+    from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
+    from tensorflow.keras.models import Model
+    TENSORFLOW_AVAILABLE = True
+except ImportError:
+    TENSORFLOW_AVAILABLE = False
+    print("⚠️ TensorFlow not installed.")
 
 
 class VisionAnalyzer:
 
     def __init__(self):
-        self.model_dir = (
-            os.path.abspath(VISION_MODEL_PATH)
-            if VISION_MODEL_PATH
-            else os.path.join(os.path.dirname(__file__), "model")
-        )
+        self.model_dir = os.path.join(os.path.dirname(__file__), "model")
         self.models = {}
         self.model_product_map = {}
         self.categories = IMAGE_CATEGORIES
         self.confidence_threshold = CONFIDENCE_THRESHOLD
         self.image_size = (224, 224)
-        self.feature_extractor = None
-        self.load_model = None
-        self.preprocess_input = None
-        self.Model = None
-        self.tensorflow_available = False
-        self.tensorflow_error = ""
-        self.vision_ready = False
-        self._tf_initialized = False
-        self._model_files: List[str] = []
 
-        self._refresh_model_files()
+        self.feature_extractor = None
+
+        if TENSORFLOW_AVAILABLE:
+            self._initialize_mobilenet()
+
         self._load_models()
 
     # ============================================================
     # MobileNetV2 Feature Extractor
     # ============================================================
-    def _refresh_model_files(self):
-        if not os.path.exists(self.model_dir):
-            os.makedirs(self.model_dir, exist_ok=True)
-        self._model_files = [
-            f for f in os.listdir(self.model_dir)
-            if f.endswith(".h5") and "_good_bad_classifier.h5" in f
-        ]
-
-    def _ensure_tensorflow_ready(self) -> bool:
-        if self._tf_initialized:
-            return self.tensorflow_available
-
-        self._tf_initialized = True
-        try:
-            from tensorflow.keras.applications import MobileNetV2
-            from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
-            from tensorflow.keras.models import Model, load_model
-        except ImportError as e:
-            self.tensorflow_error = str(e)
-            self.tensorflow_available = False
-            print("⚠️ TensorFlow not installed. Vision service running in fallback mode.")
-            return False
-
-        self.load_model = load_model
-        self.preprocess_input = preprocess_input
-        self.Model = Model
-        self.tensorflow_available = True
-        self._initialize_mobilenet(MobileNetV2)
-        return True
-
-    def _initialize_mobilenet(self, MobileNetV2):
+    def _initialize_mobilenet(self):
         print("🔄 Initializing MobileNetV2...")
 
         base_model = MobileNetV2(
@@ -85,7 +56,7 @@ class VisionAnalyzer:
             input_shape=(224, 224, 3)
         )
 
-        self.feature_extractor = self.Model(
+        self.feature_extractor = Model(
             inputs=base_model.input,
             outputs=base_model.output
         )
@@ -107,24 +78,26 @@ class VisionAnalyzer:
     # Load Classifiers
     # ============================================================
     def _load_models(self):
-        self.models = {}
-        self.model_product_map = {}
-        self.vision_ready = False
-        self._refresh_model_files()
 
-        if not self._model_files:
+        if not TENSORFLOW_AVAILABLE:
             return
 
-        if not self._ensure_tensorflow_ready():
+        if not os.path.exists(self.model_dir):
+            os.makedirs(self.model_dir, exist_ok=True)
             return
 
-        for filename in self._model_files:
+        files = [f for f in os.listdir(self.model_dir) if f.endswith(".h5")]
+
+        for filename in files:
+            if "_good_bad_classifier.h5" not in filename:
+                continue
+
             try:
                 path = os.path.join(self.model_dir, filename)
                 product_name = filename.replace("_good_bad_classifier.h5", "")
                 norm = self._normalize_product_name(product_name)
 
-                model = self.load_model(path)
+                model = load_model(path)
 
                 self.models[product_name] = model
                 self.model_product_map[norm] = product_name
@@ -133,8 +106,6 @@ class VisionAnalyzer:
 
             except Exception as e:
                 print(f"❌ Failed loading {filename}: {e}")
-
-        self.vision_ready = bool(self.models and self.feature_extractor)
 
     # ============================================================
     # Model Finder
@@ -174,36 +145,8 @@ class VisionAnalyzer:
         model_name=None
     ) -> Dict:
 
-        if not self.models:
-            self._load_models()
-
-        if not self.tensorflow_available and self._model_files:
-            return {
-                "error": "Vision dependencies are unavailable on this deployment.",
-                "category": "other",
-                "confidence": 0.0,
-                "meets_threshold": False,
-                "all_predictions": {},
-                "recommendation": "Chat support is still available. Install TensorFlow only on deployments that need image analysis.",
-                "product_id": product_id,
-                "product_name": product_name,
-                "order_id": order_id,
-                "model_used": "unavailable"
-            }
-
-        if not self._model_files:
-            return {
-                "error": f"No classifier model files found in {self.model_dir}",
-                "category": "other",
-                "confidence": 0.0,
-                "meets_threshold": False,
-                "all_predictions": {},
-                "recommendation": "Chat support is available. Add product classifier .h5 files to enable image analysis.",
-                "product_id": product_id,
-                "product_name": product_name,
-                "order_id": order_id,
-                "model_used": "unavailable"
-            }
+        if not TENSORFLOW_AVAILABLE:
+            return {"error": "TensorFlow not available"}
 
         img = self._load_image(image_input)
         if img is None:
@@ -215,18 +158,7 @@ class VisionAnalyzer:
             model = self._find_model_for_product(product_id, product_name)
 
         if not model:
-            return {
-                "error": f"No classifier model available in {self.model_dir}",
-                "category": "other",
-                "confidence": 0.0,
-                "meets_threshold": False,
-                "all_predictions": {},
-                "recommendation": "Upload classifier .h5 files or set VISION_MODEL_PATH.",
-                "product_id": product_id,
-                "product_name": product_name,
-                "order_id": order_id,
-                "model_used": "unavailable"
-            }
+            return {"error": "No classifier model available"}
 
         img_array = self._preprocess_image(img)
         features = self._extract_features(img_array)
@@ -354,12 +286,9 @@ class VisionAnalyzer:
             "total_models": len(self.models),
             "models": list(self.models.keys()),
             "model_directory": self.model_dir,
-            "model_files_found": len(self._model_files),
             "feature_extractor": "MobileNetV2",
             "supports_binary": True,
-            "supports_multiclass": True,
-            "tensorflow_available": self.tensorflow_available,
-            "vision_ready": self.vision_ready
+            "supports_multiclass": True
         }
 
     def get_categories(self) -> List[str]:

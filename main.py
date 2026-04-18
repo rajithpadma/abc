@@ -12,7 +12,7 @@ from werkzeug.utils import secure_filename
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from config.config import HOST, PORT, DEBUG, EXPORT_PATH, FLASK_SECRET_KEY
+from config.config import HOST, PORT, DEBUG, EXPORT_PATH
 from src.database.database import db_manager
 from src.auth.credentials import credentials_manager
 from src.agent.ai_agent import support_agent
@@ -25,7 +25,7 @@ from src.utils.excel_generator import excel_generator
 app = Flask(__name__, 
             template_folder='frontend/templates',
             static_folder='frontend/static')
-app.secret_key = FLASK_SECRET_KEY or secrets.token_hex(32)
+app.secret_key = secrets.token_hex(32)
 CORS(app)
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'uploads')
@@ -34,25 +34,6 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
 tool_executor.set_shipment_manager(shipment_manager)
-services_initialized = False
-
-
-def ensure_services_initialized():
-    """Initialize core services for both local run and WSGI/Gunicorn."""
-    global services_initialized
-    if services_initialized:
-        # Retry DB connection if startup happened before DB became available.
-        if db_manager.db is None:
-            db_manager.connect()
-        return
-    initialize()
-    services_initialized = True
-
-
-@app.before_request
-def _ensure_init_before_request():
-    """Guarantee DB and model initialization when served by WSGI."""
-    ensure_services_initialized()
 
 
 # =============================================================================
@@ -343,8 +324,7 @@ def analyze_image():
             product_name=product_name
         )
         os.remove(filepath)
-        status_code = 200 if not result.get("error") else 503
-        return jsonify(result), status_code
+        return jsonify(result)
     except Exception as e:
         if os.path.exists(filepath):
             os.remove(filepath)
@@ -454,7 +434,7 @@ def health_check():
         "status": "healthy",
         "timestamp": datetime.utcnow().isoformat(),
         "services": {
-            "database": "connected" if db_manager.db else "csv_fallback",
+            "database": "connected" if db_manager.db else "disconnected",
             "ai_agent": "ready" if support_agent.api_available else "fallback_mode",
             "vision_models": model_info["total_models"],
             "exports_path": EXPORT_PATH
@@ -491,7 +471,6 @@ def initialize():
         print(f"   Place models in: {vision_analyzer.model_dir}")
         print(f"   Format: ProductName_good_bad_classifier.h5")
         print(f"   Example: AirChef Fryo_good_bad_classifier.h5")
-        print("   Chat support will continue to work without image analysis.")
     
     # Ensure export directory exists
     os.makedirs(EXPORT_PATH, exist_ok=True)
@@ -503,5 +482,5 @@ def initialize():
 
 
 if __name__ == '__main__':
-    ensure_services_initialized()
+    initialize()
     app.run(host=HOST, port=PORT, debug=DEBUG)

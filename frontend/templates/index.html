@@ -43,7 +43,7 @@
                         <span id="imageFileName"></span>
                     </div>
                     <form id="chatForm" class="chat-form">
-                        <input type="text" id="messageInput" placeholder="Describe your issue here..." autocomplete="off">
+                        <input type="text" id="messageInput" placeholder="Please upload product image first..." autocomplete="off" disabled>
                         <button type="submit" class="btn-send">Send</button>
                     </form>
                 </div>
@@ -60,7 +60,7 @@
         
         let imageAnalysis = null;
         let imageUploaded = false;
-        let chatEnabled = true;
+        let chatEnabled = false;
 
         if (!userId || !selectedOrderId) {
             window.location.href = '/login';
@@ -68,7 +68,7 @@
 
         document.getElementById('currentUser').textContent = userId;
         
-        // Show initial greeting with optional image upload guidance
+        // Show initial greeting with MANDATORY image upload requirement
         showInitialMessage();
         
         function showInitialMessage() {
@@ -85,9 +85,9 @@
                         </div>
                         
                         <div style="background: #fff3cd; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107; margin-bottom: 15px;">
-                            <strong style="color: #856404; font-size: 16px;">📷 Optional image upload</strong><br><br>
+                            <strong style="color: #856404; font-size: 16px;">⚠️ IMPORTANT - Image Upload Required</strong><br><br>
                             <p style="color: #856404; margin-bottom: 10px;">
-                                You can upload a clear product image if you want faster issue assessment. Chat will still work even if image analysis is unavailable.
+                                Before we can assist you, please upload a clear image of the product showing the issue. This helps us:
                             </p>
                             <ul style="color: #856404; margin-left: 20px;">
                                 <li>Accurately assess the problem</li>
@@ -98,14 +98,14 @@
                         
                         <p style="margin-bottom: 10px;"><strong>How to upload:</strong></p>
                         <ol style="margin-left: 20px; margin-bottom: 15px;">
-                            <li>Click the 📷 button below if you want image analysis</li>
+                            <li>Click the 📷 button below</li>
                             <li>Select a clear photo of your product</li>
-                            <li>Wait for analysis if models are available</li>
-                            <li>Describe your issue in the chat at any time</li>
+                            <li>Wait for our AI to analyze the image</li>
+                            <li>Then describe your issue in detail</li>
                         </ol>
                         
                         <p style="color: #666; font-style: italic;">
-                            I can help with returns, replacements, refunds, and shipment tracking even without an uploaded image.
+                            Once your image is analyzed, I can help you with returns, replacements, refunds, and more!
                         </p>
                     </div>
                 </div>
@@ -133,18 +133,13 @@
                     body: formData
                 });
                 const result = await response.json();
+                imageAnalysis = result;
                 imageUploaded = true;
-
+                
+                // Enable chat after image upload
+                chatEnabled = true;
                 document.getElementById('messageInput').disabled = false;
                 document.getElementById('messageInput').placeholder = 'Type your message...';
-
-                if (!response.ok || result.error) {
-                    imageAnalysis = null;
-                    addMessage(`⚠️ Image analysis is unavailable right now.<br><br>${result.error || 'The uploaded image could not be analyzed.'}<br><br>You can continue chatting without the image model.`, 'bot');
-                    return;
-                }
-
-                imageAnalysis = result;
 
                 if (result.category) {
                     let analysisMessage = `✅ <strong>Image Analysis Complete!</strong><br><br>`;
@@ -165,15 +160,21 @@
             } catch (error) {
                 console.error('Image analysis error:', error);
                 imageUploaded = true;
+                chatEnabled = true;
                 document.getElementById('messageInput').disabled = false;
                 document.getElementById('messageInput').placeholder = 'Type your message...';
-                addMessage('⚠️ Image analysis could not be completed. You can still continue in chat and describe the issue manually.', 'bot');
+                addMessage('✅ Image uploaded. Please describe the issue with your product.', 'bot');
             }
         });
 
         // Chat form handler
         document.getElementById('chatForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            
+            if (!chatEnabled) {
+                addMessage('⚠️ Please upload a product image first before starting the chat.', 'bot');
+                return;
+            }
             
             const input = document.getElementById('messageInput');
             const message = input.value.trim();
