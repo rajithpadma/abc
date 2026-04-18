@@ -4,7 +4,7 @@ services:
     env: python
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn wsgi:application --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120
+    startCommand: gunicorn wsgi:application --bind 0.0.0.0:$PORT --workers 1 --threads 2 --timeout 120
     healthCheckPath: /api/health
     envVars:
       - key: PYTHON_VERSION
@@ -15,8 +15,6 @@ services:
         value: "False"
       - key: DATABASE_NAME
         value: Product_Database
-      - key: VISION_MODEL_PATH
-        value: /opt/render/project/src/src/vision/model
       - key: OPENROUTER_API_KEY
         sync: false
       - key: FLASK_SECRET_KEY

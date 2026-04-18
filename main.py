@@ -343,7 +343,8 @@ def analyze_image():
             product_name=product_name
         )
         os.remove(filepath)
-        return jsonify(result)
+        status_code = 200 if not result.get("error") else 503
+        return jsonify(result), status_code
     except Exception as e:
         if os.path.exists(filepath):
             os.remove(filepath)
@@ -453,7 +454,7 @@ def health_check():
         "status": "healthy",
         "timestamp": datetime.utcnow().isoformat(),
         "services": {
-            "database": "connected" if db_manager.db else "disconnected",
+            "database": "connected" if db_manager.db else "csv_fallback",
             "ai_agent": "ready" if support_agent.api_available else "fallback_mode",
             "vision_models": model_info["total_models"],
             "exports_path": EXPORT_PATH
@@ -490,6 +491,7 @@ def initialize():
         print(f"   Place models in: {vision_analyzer.model_dir}")
         print(f"   Format: ProductName_good_bad_classifier.h5")
         print(f"   Example: AirChef Fryo_good_bad_classifier.h5")
+        print("   Chat support will continue to work without image analysis.")
     
     # Ensure export directory exists
     os.makedirs(EXPORT_PATH, exist_ok=True)

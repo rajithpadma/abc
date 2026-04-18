@@ -23,6 +23,18 @@ MODEL_PRIORITY = [
 DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "anthropic/claude-sonnet-4.6")
 
 # =============================================================================
+# PROJECT PATHS
+# =============================================================================
+_current_file = os.path.abspath(__file__)
+_config_dir = os.path.dirname(_current_file)
+PROJECT_ROOT = os.path.dirname(_config_dir)
+DATA_DIR = os.path.join(PROJECT_ROOT, "EXCEL FILES")
+RUNTIME_DATA_PATH = os.getenv(
+    "RUNTIME_DATA_PATH",
+    os.path.join(PROJECT_ROOT, "runtime_data", "app_state.json")
+)
+
+# =============================================================================
 # DATABASE CONFIGURATION
 # =============================================================================
 MONGODB_URI = os.getenv("MONGODB_URI", "")
@@ -87,7 +99,7 @@ TOTAL_DELIVERY_HOURS = 48  # 2 days
 # =============================================================================
 # VISION MODEL CONFIGURATION
 # =============================================================================
-VISION_MODEL_PATH = os.getenv("VISION_MODEL_PATH", "")
+VISION_MODEL_PATH = os.getenv("VISION_MODEL_PATH", os.path.join(PROJECT_ROOT, "src", "vision", "model"))
 IMAGE_CATEGORIES = [
     "damaged_product",
     "wrong_product",
@@ -101,13 +113,8 @@ CONFIDENCE_THRESHOLD = 0.7
 # =============================================================================
 # EXCEL EXPORT CONFIGURATION - FIXED
 # =============================================================================
-# FIXED: Get project root directory (where main.py is)
-_current_file = os.path.abspath(__file__)  # config/config.py
-_config_dir = os.path.dirname(_current_file)  # config/
-_project_root = os.path.dirname(_config_dir)  # project root
-
 # Set exports path at same level as src/
-EXPORT_PATH = os.path.join(_project_root, "exports")
+EXPORT_PATH = os.path.join(PROJECT_ROOT, "exports")
 
 # Alternative: Use environment variable if set
 EXPORT_PATH = os.getenv("EXPORT_PATH", EXPORT_PATH)
